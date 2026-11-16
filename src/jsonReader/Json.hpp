@@ -1,5 +1,6 @@
 #pragma once
 #include <Geode/Geode.hpp>
+#include "../PathCompat.hpp"
 #include <filesystem>
 #include <map>
 #include <string>
@@ -24,8 +25,10 @@ class JsonReader {
 
 	void loadData(std::function<void()> h) {
 		std::thread([=, this] {
-			auto configDir = Mod::get()->getConfigDir();
-			auto clicksPath = configDir / "Clicks" / "clicks-main";
+			// [v6] getConfigDir() mengembalikan asp::fs::Path -> konversi ke std::filesystem::path
+			std::filesystem::path clicksPath = cs::pathcompat::toStd(
+				Mod::get()->getConfigDir() / "Clicks" / "clicks-main"
+			);
 			if (std::filesystem::exists(clicksPath)) {
 				memeData.clear();
 				usefulData.clear();
