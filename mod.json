@@ -1,12 +1,12 @@
 {
-	"geode": "5.11.2",
+	"geode": "6.0.0-alpha.1",
 	"gd": {
-        "win": "2.2081",
-        "android": "2.2081",
-        "mac": "2.2081",
-        "ios": "2.2081"
-    	},
-	"version": "v2.6.3",
+		"win": "2.2091",
+		"android": "2.2091",
+		"mac": "2.2091",
+		"ios": "2.2091"
+	},
+	"version": "v2.7.0",
 	"id": "beat.click-sound",
 	"name": "Click Sounds Full",
 	"developers": [
@@ -37,15 +37,15 @@
 		"customization"
 	],
 	"dependencies": {
-        "geode.node-ids": {
-        	"version": ">=v1.23.0",
-         	"required": true
+		"geode.node-ids": {
+			"version": ">=v1.23.0",
+			"required": true
 		},
 		"uproxide.happy_textures": {
 			"version": ">=2.1.14",
 			"required": false
 		}
-    },
+	},
 	"incompatibilities": {
 		"beat.click_sounds_lite": {
 			"breaking": false,
@@ -80,10 +80,10 @@
 			}
 		},
 		"clicksounds-section": {
-            "name": "Click Sounds",
-            "description": "This category is for settings that are for <cr>Click Sounds</c>",
-            "type": "title"
-        },
+			"name": "Click Sounds",
+			"description": "This category is for settings that are for <cr>Click Sounds</c>",
+			"type": "title"
+		},
 		"enable-clicksounds": {
 			"name": "Enable Click Sounds",
 			"type": "bool",
@@ -103,18 +103,18 @@
 			"type": "custom:selectionclicks",
 			"name": "Select Your Click Sounds",
 			"default": "Useful",
-			"clicksound" : true
+			"clicksound": true
 		},
 		"clicksound-effect": {
 			"type": "custom:clicksoundeffect",
 			"name": "Test Sound",
-			"clicksound" : true
+			"clicksound": true
 		},
 		"release-section": {
-            "name": "Release Sounds",
-            "description": "This category is for settings that are for <cr>Release Sounds</c>",
-            "type": "title"
-        },
+			"name": "Release Sounds",
+			"description": "This category is for settings that are for <cr>Release Sounds</c>",
+			"type": "title"
+		},
 		"enable-releasesounds": {
 			"name": "Enable Release Sounds",
 			"type": "bool",
@@ -133,19 +133,19 @@
 		"selection-release": {
 			"type": "custom:selectionclicks",
 			"name": "Select Your Release Sounds",
-			"clicksound" : false,
+			"clicksound": false,
 			"default": "Useful"
 		},
 		"releasesound-effect": {
 			"type": "custom:clicksoundeffect",
 			"name": "Test Sound",
-			"clicksound" : false
+			"clicksound": false
 		},
 		"Miscellaneous-section": {
-            "name": "Miscellaneous",
-            "description": "This category is for settings that are <cr>Miscellaneous</c> and are extra features",
-            "type": "title"
-        },
+			"name": "Miscellaneous",
+			"description": "This category is for settings that are <cr>Miscellaneous</c> and are extra features",
+			"type": "title"
+		},
 		"sounds-everywhere": {
 			"name": "Sounds Everywhere (buggy)",
 			"type": "bool",
