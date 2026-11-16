@@ -19,7 +19,7 @@ Supporters:
 - Ubertallcats - Paid for the clicksounds.xyz domain for 2026.
 - MXGaming01 - Paid for the clicksounds.xyz domain for 2026.
 Others:  
-- Rue - Made the icon of Click Sounds (v1.6.0)
+- Rue - Made the icon of Click Sounds (v1.6.1)
 - aceofspadesss - Provided a ton of unique click sounds for the mod!
 - AkuLunical - twitter  
 (If you think I forgot to credit you, DM @coopeeo on Discord. Credit is not given for requesting a feature or submitting a click pack.)
