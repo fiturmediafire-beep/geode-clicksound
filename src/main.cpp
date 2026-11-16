@@ -266,8 +266,9 @@ class $modify(csTouchDispatcher, CCTouchDispatcher) {
 
 async::TaskHolder<web::WebResponse> m_downloadTask;
 
-// [v6] parameter sekarang asp::fs::Path (sebelumnya std::filesystem::path)
-void ProcessIndexZip(asp::fs::Path zipPathAsp) {
+// signature tetap std::filesystem::path (dideklarasikan di header lain), konversi di dalam
+void ProcessIndexZip(std::filesystem::path zipPath) {
+    auto zipPathAsp = cs::pathcompat::fromStd(zipPath);
     auto indexzipPtr = std::make_shared<decltype(indexzip)>(indexzip);
     std::thread([=] {
         auto unzip = file::Unzip::create(zipPathAsp);
@@ -278,7 +279,6 @@ void ProcessIndexZip(asp::fs::Path zipPathAsp) {
         // [v6] getConfigDir() mengembalikan asp::fs::Path
         auto clicksRootAsp = Mod::get()->getConfigDir() / "Clicks";
         std::filesystem::path clicksRoot = cs::pathcompat::toStd(clicksRootAsp);
-        std::filesystem::path zipPath = cs::pathcompat::toStd(zipPathAsp);
         std::filesystem::remove_all(clicksRoot);
         (void) unzip.unwrap().extractAllTo(clicksRootAsp);
         Loader::get()->queueInMainThread([=] {
@@ -308,9 +308,7 @@ void ProcessIndexZip(asp::fs::Path zipPathAsp) {
     }).detach();
 }
 
-// [v6] parameter sekarang asp::fs::Path (sebelumnya std::filesystem::path)
-void InstallIndexLocallyByZip(asp::fs::Path zipPathAsp) {
-    std::filesystem::path zipPath = cs::pathcompat::toStd(zipPathAsp);
+void InstallIndexLocallyByZip(std::filesystem::path zipPath) {
     if (!std::filesystem::exists(zipPath)) {
         Loader::get()->queueInMainThread([] {
             Notification::create(
@@ -328,8 +326,7 @@ void InstallIndexLocallyByZip(asp::fs::Path zipPathAsp) {
         Mod::get()->setSavedValue<bool>("CSINDEXDOWNLOADING", true);
     });
     // Copy file to expected zip path so ProcessIndexZip can clean it up normally
-    auto targetPathAsp = Mod::get()->getConfigDir() / "Clicks.zip";
-    std::filesystem::path targetPath = cs::pathcompat::toStd(targetPathAsp);
+    std::filesystem::path targetPath = cs::pathcompat::toStd(Mod::get()->getConfigDir() / "Clicks.zip");
     std::error_code ec;
     std::filesystem::copy_file(zipPath, targetPath, std::filesystem::copy_options::overwrite_existing, ec);
     if (ec) {
@@ -342,7 +339,7 @@ void InstallIndexLocallyByZip(asp::fs::Path zipPathAsp) {
         Mod::get()->setSavedValue<bool>("CSINDEXDOWNLOADING", false);
         return;
     }
-    ProcessIndexZip(targetPathAsp);
+    ProcessIndexZip(targetPath);
 }
 
 void SendRequestAPI(bool forceDownload = false) {
@@ -382,7 +379,7 @@ void SendRequestAPI(bool forceDownload = false) {
                 Mod::get()->setSavedValue<bool>("CSINDEXDOWNLOADING", false);
                 return;
             }
-            ProcessIndexZip(zipPath);
+            ProcessIndexZip(cs::pathcompat::toStd(zipPath));
         }
     );
 }
