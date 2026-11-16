@@ -7,6 +7,7 @@
 #include <Geode/utils/web.hpp>
 #include <Geode/utils/async.hpp>
 #include "popup.hpp"
+#include "../PathCompat.hpp"
 #include "../ButtonSprites/Sprite.hpp"
 #include "../jsonReader/Json.hpp"
 #include <fstream>
@@ -327,14 +328,17 @@ protected:
         zipFilter.description = "Index ZIP";
         zipFilter.files = { "*.zip" };
 
-        auto getPersistentDir = Mod::get()->getSavedValue<std::filesystem::path>("cspi-persistent-dir");
+        // [v6] disimpan sebagai string UTF-8, bukan std::filesystem::path
+        std::filesystem::path getPersistentDir = cs::pathcompat::toStd(
+            Mod::get()->getSavedValue<std::string>("cspi-persistent-dir")
+        );
 
         if (m_cspiFilePickerOpen) return;
         m_cspiFilePickerOpen = true;
 
         async::spawn(
-            file::pick(file::PickMode::OpenFile, { getPersistentDir, { zipFilter } }),
-            [this](Result<std::optional<std::filesystem::path>> res) {
+            file::pick(file::PickMode::OpenFile, { cs::pathcompat::fromStd(getPersistentDir), { zipFilter } }),
+            [this](Result<std::optional<asp::fs::Path>> res) {
                 auto scene = CCDirector::sharedDirector()->getRunningScene();
                 if (!res || !res.isOk()) {
                     m_cspiFilePickerOpen = false;
@@ -345,7 +349,8 @@ protected:
                     m_cspiFilePickerOpen = false;
                     return false;
                 }
-                auto path = opt.value();
+                // [v6] hasil file::pick sekarang asp::fs::Path -> konversi ke std::filesystem::path
+                std::filesystem::path path = cs::pathcompat::toStd(opt.value());
                 auto stem = path.stem().string();
                 
                 if (path.extension() != ".zip" || stem != "clicks-main" && !stem.starts_with("clicks-main (")) {
@@ -367,7 +372,7 @@ protected:
                     m_cspiFilePickerOpen = false;
                     return false;
                 }
-                Mod::get()->setSavedValue<std::filesystem::path>("cspi-persistent-dir", path);
+                Mod::get()->setSavedValue<std::string>("cspi-persistent-dir", cs::pathcompat::toUtf8(path));
                 if (scene) {
                     if (auto* downloadPopup = scene->getChildByID("download-popup"_spr)) {
                         downloadPopup->removeFromParent();
@@ -395,7 +400,8 @@ protected:
                     std::thread([] {
                         Mod* mod = Mod::get();
                         mod->setSavedValue<bool>("CSINDEXCLEARING", true);
-                        std::filesystem::path dir = mod->getConfigDir() / "Clicks" / "clicks-main";
+                        // [v6] getConfigDir() mengembalikan asp::fs::Path
+                        std::filesystem::path dir = cs::pathcompat::toStd(mod->getConfigDir() / "Clicks" / "clicks-main");
 
                         if (std::filesystem::exists(dir / "Meme"))
                             std::filesystem::remove_all(dir / "Meme");
@@ -474,41 +480,47 @@ protected:
 	}
 
     void cspiFileSelection() {
-		std::filesystem::path dir = Loader::get()->getInstalledMod("beat.click-sound")->getConfigDir() / "Clicks" / "clicks-main";
+		// [v6] getConfigDir() mengembalikan asp::fs::Path
+		std::filesystem::path dir = cs::pathcompat::toStd(
+			Loader::get()->getInstalledMod("beat.click-sound")->getConfigDir() / "Clicks" / "clicks-main"
+		);
 		file::FilePickOptions::Filter textFilter;
 		file::FilePickOptions fileOptions;
 		textFilter.description = "Click Pack";
 		textFilter.files = { "*.packgen.zip" };
 		fileOptions.filters.push_back(textFilter);
-		auto getPersistentDir = Mod::get()->getSavedValue<std::filesystem::path>("cspi-persistent-dir");
+		std::filesystem::path getPersistentDir = cs::pathcompat::toStd(
+			Mod::get()->getSavedValue<std::string>("cspi-persistent-dir")
+		);
 
 		if (m_cspiFilePickerOpen) return;
 		m_cspiFilePickerOpen = true;
 
         async::spawn(
-            file::pick(file::PickMode::OpenFile, { getPersistentDir, { textFilter } }),
-            [this, dir](Result<std::optional<std::filesystem::path>> res) {
+            file::pick(file::PickMode::OpenFile, { cs::pathcompat::fromStd(getPersistentDir), { textFilter } }),
+            [this, dir](Result<std::optional<asp::fs::Path>> res) {
                 if (!res || !res.isOk()) return false;
                 if (res.isOk()) {
                     auto opt = res.unwrap();
                     if (opt) {
-                        auto path = opt.value();
+                        // [v6] hasil file::pick sekarang asp::fs::Path -> konversi ke std::filesystem::path
+                        std::filesystem::path path = cs::pathcompat::toStd(opt.value());
                         if (path.extension() != ".zip") {
                             FLAlertLayer::create("Click Sounds", "Invalid click pack: Not in .packgen.zip format!", "Close")->show();
                             m_cspiFilePickerOpen = false;
                             return false;
                         }
 
-                        Mod::get()->setSavedValue<std::filesystem::path>("cspi-persistent-dir", path);
+                        Mod::get()->setSavedValue<std::string>("cspi-persistent-dir", cs::pathcompat::toUtf8(path));
 
-                        std::filesystem::path tempDir = dirs::getTempDir() / path.stem();
+                        std::filesystem::path tempDir = cs::pathcompat::toStd(dirs::getTempDir()) / path.stem();
                         std::filesystem::create_directories(tempDir);
 
                         std::filesystem::path tempZipPath = tempDir / path.filename();
                         std::filesystem::copy(path, tempZipPath, std::filesystem::copy_options::overwrite_existing);
 
-                        auto unzip = file::Unzip::create(tempZipPath);
-                        auto unzipResult = unzip.unwrap().extractAllTo(tempDir);
+                        auto unzip = file::Unzip::create(cs::pathcompat::fromStd(tempZipPath));
+                        auto unzipResult = unzip.unwrap().extractAllTo(cs::pathcompat::fromStd(tempDir));
                         if (!unzipResult) return false;
 
                         std::filesystem::path packJsonPath = tempDir / "pack.json";
@@ -673,11 +685,13 @@ protected:
 
         async::spawn(
             file::pick(file::PickMode::OpenFile, { Mod::get()->getResourcesDir(), { textFilter } }), 
-            [this,sender](Result<std::optional<std::filesystem::path>> res) {
+            [this,sender](Result<std::optional<asp::fs::Path>> res) {
+                // [v6] hasil file::pick sekarang asp::fs::Path; juga dicek kosong (user batal memilih)
                 if (res.isOk()) {
                     auto path = res.unwrap();
+                    if (!path) return;
                     ClicksoundSettingValue Changes = this->getValue();
-                    Changes.CustomSoundPath = path->string().c_str();
+                    Changes.CustomSoundPath = cs::pathcompat::toUtf8(*path);
                     this->setValue(Changes, static_cast<CCNode*>(sender));
                     this->onCommit();
                 }
