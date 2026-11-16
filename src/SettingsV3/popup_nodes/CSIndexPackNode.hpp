@@ -2,6 +2,7 @@
 
 #include "../../ButtonSprites/Sprite.hpp"
 #include "../../jsonReader/Json.hpp"
+#include "../../PathCompat.hpp"
 #include <Geode/Geode.hpp>
 #include <Geode/loader/Event.hpp>
 #include <Geode/ui/TextInput.hpp>
@@ -170,8 +171,9 @@ class CSIndexPackNode : public CCLayerColor {
 				// check if featured
 				if (jsonObject.contains("id") && jsonObject["id"].isString()) {
 					std::string id = jsonObject["id"].asString().unwrap();
+					// [v6] getConfigDir() mengembalikan asp::fs::Path
 					auto featuredPath = Mod::get()->getConfigDir() / "Clicks" / "clicks-main" / "featured_list.json";
-					if (std::filesystem::exists(featuredPath)) {
+					if (std::filesystem::exists(cs::pathcompat::toStd(featuredPath))) {
 						auto featuredJsonData = utils::file::readJson(featuredPath).unwrapOr(-2);
 						if (featuredJsonData == -2) log::debug("couldnt unwrap featured_list.json");
 						if (featuredJsonData.isArray()) {
