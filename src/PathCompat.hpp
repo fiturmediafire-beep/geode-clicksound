@@ -22,6 +22,12 @@ namespace cs::pathcompat {
         }
     }
 
+    // std::filesystem::path -> std::string (UTF-8)
+    inline std::string toUtf8(std::filesystem::path const& p) {
+        auto u = p.u8string();
+        return std::string(u.begin(), u.end());
+    }
+
     // std::string (UTF-8) -> std::filesystem::path
     inline std::filesystem::path toStd(std::string const& s) {
         return std::filesystem::path(std::u8string(s.begin(), s.end()));
