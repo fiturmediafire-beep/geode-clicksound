@@ -1,3 +1,4 @@
+#include "PathCompat.hpp"
 #include "ButtonSprites/Sprite.hpp"
 #include "SettingsV3/PlaySound.hpp"
 #include "SettingsV3/SelectionEnum.hpp"
@@ -265,17 +266,21 @@ class $modify(csTouchDispatcher, CCTouchDispatcher) {
 
 async::TaskHolder<web::WebResponse> m_downloadTask;
 
-void ProcessIndexZip(std::filesystem::path zipPath) {
+// [v6] parameter sekarang asp::fs::Path (sebelumnya std::filesystem::path)
+void ProcessIndexZip(asp::fs::Path zipPathAsp) {
     auto indexzipPtr = std::make_shared<decltype(indexzip)>(indexzip);
     std::thread([=] {
-        auto unzip = file::Unzip::create(zipPath);
+        auto unzip = file::Unzip::create(zipPathAsp);
         if (!unzip) {
             Mod::get()->setSavedValue<bool>("CSINDEXDOWNLOADING", false);
             return;
         }
-        auto clicksRoot = Mod::get()->getConfigDir() / "Clicks";
+        // [v6] getConfigDir() mengembalikan asp::fs::Path
+        auto clicksRootAsp = Mod::get()->getConfigDir() / "Clicks";
+        std::filesystem::path clicksRoot = cs::pathcompat::toStd(clicksRootAsp);
+        std::filesystem::path zipPath = cs::pathcompat::toStd(zipPathAsp);
         std::filesystem::remove_all(clicksRoot);
-        (void) unzip.unwrap().extractAllTo(clicksRoot);
+        (void) unzip.unwrap().extractAllTo(clicksRootAsp);
         Loader::get()->queueInMainThread([=] {
             Notification::create(
                 "CS: Index updated successfully!",
@@ -303,7 +308,9 @@ void ProcessIndexZip(std::filesystem::path zipPath) {
     }).detach();
 }
 
-void InstallIndexLocallyByZip(std::filesystem::path zipPath) {
+// [v6] parameter sekarang asp::fs::Path (sebelumnya std::filesystem::path)
+void InstallIndexLocallyByZip(asp::fs::Path zipPathAsp) {
+    std::filesystem::path zipPath = cs::pathcompat::toStd(zipPathAsp);
     if (!std::filesystem::exists(zipPath)) {
         Loader::get()->queueInMainThread([] {
             Notification::create(
@@ -321,7 +328,8 @@ void InstallIndexLocallyByZip(std::filesystem::path zipPath) {
         Mod::get()->setSavedValue<bool>("CSINDEXDOWNLOADING", true);
     });
     // Copy file to expected zip path so ProcessIndexZip can clean it up normally
-    auto targetPath = Mod::get()->getConfigDir() / "Clicks.zip";
+    auto targetPathAsp = Mod::get()->getConfigDir() / "Clicks.zip";
+    std::filesystem::path targetPath = cs::pathcompat::toStd(targetPathAsp);
     std::error_code ec;
     std::filesystem::copy_file(zipPath, targetPath, std::filesystem::copy_options::overwrite_existing, ec);
     if (ec) {
@@ -334,7 +342,7 @@ void InstallIndexLocallyByZip(std::filesystem::path zipPath) {
         Mod::get()->setSavedValue<bool>("CSINDEXDOWNLOADING", false);
         return;
     }
-    ProcessIndexZip(targetPath);
+    ProcessIndexZip(targetPathAsp);
 }
 
 void SendRequestAPI(bool forceDownload = false) {
@@ -381,18 +389,19 @@ void SendRequestAPI(bool forceDownload = false) {
 
 void extractDefaultClickPack() {
     auto mod = Mod::get();
-	std::filesystem::path configPath = mod->getConfigDir();
+    // [v6] getConfigDir()/getResourcesDir() mengembalikan asp::fs::Path
+    std::filesystem::path configPath = cs::pathcompat::toStd(mod->getConfigDir());
 
     std::filesystem::create_directories(configPath / "Clicks" / "clicks-main" / "Useful");
 
     std::filesystem::path destinationPath = configPath / "Clicks" / "clicks-main" / "Useful" / "clicksounds.default";
-    std::filesystem::path resourcePath = mod->getResourcesDir() / "clicksounds.default.packgen.zip";
+    auto resourcePathAsp = mod->getResourcesDir() / "clicksounds.default.packgen.zip";
 
     if (std::filesystem::is_directory(destinationPath) && std::filesystem::exists(destinationPath)) return;
 
-    auto unzip = file::Unzip::create(resourcePath);
+    auto unzip = file::Unzip::create(resourcePathAsp);
     if (!unzip) return;
-    (void) unzip.unwrap().extractAllTo(destinationPath);
+    (void) unzip.unwrap().extractAllTo(cs::pathcompat::fromStd(destinationPath));
 	mod->setSavedValue("CSINDEXRELOAD", true);
 }
 
@@ -432,8 +441,10 @@ $on_mod(Loaded) {
 	});
 	SpritePicker::secret = Loader::get()->isModLoaded("carrot_devs.carrotmodcarrotcarrotcarrotcarrotcarrot"); // carrot sprite flag
 	// sets the persistent directory to the geode folder if the user hasnt ever chosen a path before
-	if (Mod::get()->getSavedValue<std::filesystem::path>("cspi-persistent-dir").empty() || !std::filesystem::exists(Mod::get()->getSavedValue<std::filesystem::path>("cspi-persistent-dir"))) {
-		Mod::get()->setSavedValue<std::filesystem::path>("cspi-persistent-dir", dirs::getGeodeDir());
+	// [v6] disimpan sebagai string UTF-8 (dirs::getGeodeDir() sekarang asp::fs::Path)
+	auto savedPersistentDir = Mod::get()->getSavedValue<std::string>("cspi-persistent-dir");
+	if (savedPersistentDir.empty() || !std::filesystem::exists(cs::pathcompat::toStd(savedPersistentDir))) {
+		Mod::get()->setSavedValue<std::string>("cspi-persistent-dir", cs::pathcompat::toUtf8(dirs::getGeodeDir()));
 	}
 }
 class $modify(EndLevelLayer){void customSetup(){EndLevelLayer::customSetup();if(Carrot::carrot==true){auto eee = CCNode::create();auto ee = CCSprite::create("ee.png"_spr);eee->setPosition(450, 260);eee->setAnchorPoint({0.5, 0.5});eee->setScale(0.2);ee->setOpacity(10);eee->addChild(ee);static_cast<cocos2d::CCLayer*>(this->getChildren()->objectAtIndex(0))->addChild(eee);}Carrot::carrot=false;}};
