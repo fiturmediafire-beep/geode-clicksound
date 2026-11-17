@@ -444,4 +444,25 @@ $on_mod(Loaded) {
 		Mod::get()->setSavedValue<std::string>("cspi-persistent-dir", cs::pathcompat::toUtf8(dirs::getGeodeDir()));
 	}
 }
-class $modify(EndLevelLayer){void customSetup(){EndLevelLayer::customSetup();if(Carrot::carrot==true){auto eee = CCNode::create();auto ee = CCSprite::create("ee.png"_spr);eee->setPosition(450, 260);eee->setAnchorPoint({0.5, 0.5});eee->setScale(0.2);ee->setOpacity(10);eee->addChild(ee);static_cast<cocos2d::CCLayer*>(this->getChildren()->objectAtIndex(0))->addChild(eee);}Carrot::carrot=false;}};
+class $modify(EndLevelLayer) {
+	void customSetup() {
+		EndLevelLayer::customSetup();
+		if (Carrot::carrot == true) {
+			// [GD 2.2091] struktur child bisa berubah -> semua dicek null dulu
+			auto ee = CCSprite::create("ee.png"_spr);
+			auto children = this->getChildren();
+			if (ee && children && children->count() > 0) {
+				if (auto layer = typeinfo_cast<CCLayer*>(children->objectAtIndex(0))) {
+					auto eee = CCNode::create();
+					eee->setPosition(450, 260);
+					eee->setAnchorPoint({0.5, 0.5});
+					eee->setScale(0.2);
+					ee->setOpacity(10);
+					eee->addChild(ee);
+					layer->addChild(eee);
+				}
+			}
+		}
+		Carrot::carrot = false;
+	}
+};
